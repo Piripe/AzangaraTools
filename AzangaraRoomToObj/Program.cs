@@ -1,120 +1,129 @@
-﻿using AzangaraTools;
+﻿using System.Numerics;
+using AzangaraTools;
+using AzangaraTools.Enums;
 using AzangaraTools.Models;
+using SharpGLTF.Geometry;
+using SharpGLTF.Geometry.VertexTypes;
+using SharpGLTF.Materials;
+using SharpGLTF.Memory;
+using SharpGLTF.Scenes;
+using SharpGLTF.Schema2;
 using StbImageSharp;
-using ColorComponents = StbImageWriteSharp.ColorComponents;
+using AlphaMode = SharpGLTF.Materials.AlphaMode;
 
-namespace  AzangaraRoomToObj;
-// RoomToObjConverter.cs (Header‑aware version)
-// Reads geometry offsets directly from the Azangara .room header.
-// Usage: dotnet run -- <input.room> <output.obj> <output_lm.png>
-
-using System;
-using System.IO;
-using System.Numerics;
-using System.Collections.Generic;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Formats.Png;
-
-class Program
+namespace AzangaraRoomToGltf
 {
-    static void Main(string[] args)
+    class Program
     {
-        try
+        static void Main(string[] args)
         {
-            //var fs = File.OpenRead(args[0]);
-            Console.WriteLine("Folder: ");
-            var fr = FolderReader.ReadFolder("/media/hdd/Games/Azangara/Azangara/" ?? Console.ReadLine() ?? Environment.CurrentDirectory);
-            Console.WriteLine(string.Join('\n', fr.LoadedFiles.Keys.Where(x => x.StartsWith("models"))));
-            Console.WriteLine("Room file: ");
-            var room = fr.GetRoom("levels/rooms_6/001.room" ?? Console.ReadLine() ?? "levels/rooms_6/001.room"); //Room.Load(fr);
-            
-            Console.WriteLine(fr.LoadedFiles.ContainsKey("models/lit_horz_03.mmd"));
-
-            //fs.Close();
-
-            //Console.WriteLine(string.Join('\n',room.RoomGeometry.Select(x=>new string(x.Select(y=>(char)y.Item).ToArray()))));
-
-            WriteFrameToObj(room.Geometry.Frames[0], "geometry.obj");
-            WriteFrameToObj(room.GeometryBack.Frames[0], "back.obj");
-            WriteFrameToObj(room.GeometryLightMap.Frames[0], "lightmap.obj");
-            WriteFrameToObj(
-                MergeFrames(room.GetStatics().Select(x =>
-                    new Frame(x.Model.Frames[0].GetTransformedVertices(x.Definition.Transform),
-                        x.Model.Frames[0].Indices)).ToArray()), "statics.obj");
-            foreach (var x in room.GetStatics())
+            try
             {
-                var xfs = File.OpenWrite(x.TexturePath.Replace('/','_'));
-                new StbImageWriteSharp.ImageWriter().WritePng(x.Texture.Data, 256, 256,
-                    ColorComponents.RedGreenBlueAlpha, xfs);
-                xfs.Close();
+                Console.WriteLine("Folder: ");
+                var fr = FolderReader.ReadFolder("/media/hdd/Games/Azangara/Azangara/" ?? Console.ReadLine() ?? Environment.CurrentDirectory);
+                Console.WriteLine(string.Join('\n', fr.LoadedFiles.Keys.Where(x => x.StartsWith("models"))));
+                Console.WriteLine("Room file: ");
+                var roomPath = "levels/rooms_6/001.room" ?? Console.ReadLine() ?? "levels/rooms_6/001.room";
+                var room = fr.GetRoom(roomPath);
+                Console.WriteLine("Geometry image: ");
+                var geometryPath = "textures/rooms/5_01_floor.jpg" ?? Console.ReadLine() ?? "textures/rooms/5_01_floor.jpg";
+                Console.WriteLine("Back image: ");
+                var backPath = "textures/rooms/5_01_wall.jpg" ?? Console.ReadLine() ?? "textures/rooms/5_01_wall.jpg";
+                
+                var model = new SceneBuilder();
+
+                // Generate the geometries
+                ProcessGeometry("Geometry", null, room.Geometry.Frames[0], fr.GetImage(geometryPath), model);
+                ProcessGeometry("Back", null, room.GeometryBack.Frames[0], fr.GetImage(backPath), model);
+                ProcessGeometry("LightMap", null, room.GeometryLightMap.Frames[0], room.BitmapLightMap, model, true);
+                int staticIndex = 0;
+                foreach (var obj in room.GetStatics())
+                {
+                    ProcessGeometry(
+                        "Static"+(staticIndex++), 
+                        obj.TexturePath,
+                        new Frame(
+                            obj.Model.Frames[0].GetTransformedVertices(obj.Definition.Transform),
+                            obj.Model.Frames[0].Indices), 
+                        obj.Texture, 
+                        model,
+                        obj.Definition.Alight == AlightMode.Multiply);
+                }
+                
+
+                // Save the GLTF file
+                //string outputFileName = Path.ChangeExtension(args[0], ".gltf");
+                model.ToGltf2().Save(Path.GetFileNameWithoutExtension(roomPath) + ".glb");
             }
-
-            var fs = File.OpenWrite("lm.png");
-            new StbImageWriteSharp.ImageWriter().WritePng(room.BitmapLightMap.Data, 256, 256,
-                ColorComponents.RedGreenBlueAlpha, fs);
-            fs.Close();
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
         }
-        catch (Exception e)
+
+        static Frame MergeFrames(params Frame[] frames)
         {
-            Console.WriteLine(e.ToString());
-        }
-    }
-
-    static Frame MergeFrames(params Frame[] frames)
-    {
-        var offset = 0;
-        return new Frame(
-            frames.SelectMany(x=>x.Vertices).ToArray(), 
-            frames.SelectMany(x =>
+            var offset = 0;
+            return new Frame(
+                frames.SelectMany(x => x.Vertices).ToArray(),
+                frames.SelectMany(x =>
                 {
                     var offset1 = offset;
                     offset += x.Vertices.Length;
                     return x.Indices.Select(y => (ushort)(y + offset1));
                 }).ToArray());
-    }
-    
-    public static void WriteFrameToObj(Frame frame, string filePath)
-    {
-        using var writer = new StreamWriter(filePath);
-
-        writer.WriteLine("# Generated OBJ");
-        writer.WriteLine();
-
-        // ---- Write vertices (v x y z) ----
-        foreach (var v in frame.Vertices)
-        {
-            writer.WriteLine($"v {v.Pos.X} {v.Pos.Y} {v.Pos.Z}");
         }
 
-        writer.WriteLine();
-
-        // ---- Write UVs (vt u v) ----
-        foreach (var v in frame.Vertices)
+        
+        static void ProcessGeometry(string name, string? objType, Frame frame, ImageResult? texture, SceneBuilder model, bool transparent = false)
         {
-            writer.WriteLine($"vt {v.U} {1-v.V}");
+            var meshBuilder = new MeshBuilder<VertexPositionNormal, VertexTexture1>(name);
+            var vertices = frame.Vertices.Select(v => new VertexBuilder<VertexPositionNormal, VertexTexture1, VertexEmpty>(new VertexPositionNormal(v.Pos, v.Normal), new VertexTexture1(new Vector2(v.U,v.V)))).ToArray();
+
+            // Add the vertices
+            var primitiveBuilder = meshBuilder.UsePrimitive(CreateMaterial(objType, frame, texture, model, transparent), 3);
+
+            for (int i = 0; i < frame.Indices.Length; i += 3)
+            {
+                primitiveBuilder.AddTriangle(vertices[frame.Indices[i]],vertices[frame.Indices[i+1]],vertices[frame.Indices[i+2]]);
+            }
+
+            // Add UVs
+            //primitiveBuilder.UseTextureCoordinate(0, frame.Vertices.Select(v => new Vector2(v.U, 1 - v.V)).ToArray());
+
+            // Add normals
+            //primitiveBuilder.UseNormals(frame.Vertices.Select(v => new Vector3(v.Normal.X, v.Normal.Y, v.Normal.Z)).ToArray());
+
+            model.AddRigidMesh(meshBuilder, Matrix4x4.Identity);
         }
 
-        writer.WriteLine();
-
-        // ---- Write normals (vn x y z) ----
-        foreach (var v in frame.Vertices)
+        private static int materialCounter = 0;
+        private static Dictionary<string, MaterialBuilder> materials = [];
+        static MaterialBuilder CreateMaterial(string? name, Frame? frame, ImageResult? texture, SceneBuilder model, bool transparent = false)
         {
-            writer.WriteLine($"vn {v.Normal.X} {v.Normal.Y} {v.Normal.Z}");
-        }
+            if (materials.TryGetValue(name??"", out var mb)) return mb;
+            var materialBuilder = new MaterialBuilder(name ?? "Material" + (++materialCounter));
 
-        writer.WriteLine();
-
-        // ---- Faces (triangles) ----
-        // OBJ format is 1-based indexing
-        for (int i = 0; i < frame.Indices.Length; i += 3)
-        {
-            int a = frame.Indices[i] + 1;
-            int b = frame.Indices[i + 1] + 1;
-            int c = frame.Indices[i + 2] + 1;
-
-            // f v/vt/vn
-            writer.WriteLine($"f {a}/{a}/{a} {b}/{b}/{b} {c}/{c}/{c}");
+            if (texture != null)
+            {
+                var s = new MemoryStream();
+                new StbImageWriteSharp.ImageWriter().WritePng(
+                    texture.Data, 
+                    texture.Width, 
+                    texture.Height,
+                    (StbImageWriteSharp.ColorComponents)texture.Comp, 
+                    s);
+                Console.WriteLine(s.Length + " bytes written.");
+                File.WriteAllBytes((name?.Replace('/','_') ?? "Material" + (materialCounter)) + ".png", s.GetBuffer());
+                materialBuilder
+                    .WithBaseColor(ImageBuilder.From(new MemoryImage(s.GetBuffer())),Vector4.One)
+                    .WithEmissive(ImageBuilder.From(new MemoryImage(s.GetBuffer())),Vector3.One, 1);
+                if (transparent) materialBuilder.WithAlpha(AlphaMode.BLEND);
+            }
+            else materialBuilder.WithEmissive(new Vector3(1, 0, 1));
+            if (name != null) materials.Add(name, materialBuilder);
+            // Define material properties as needed, e.g., colors, textures.
+            return materialBuilder;
         }
     }
 }
