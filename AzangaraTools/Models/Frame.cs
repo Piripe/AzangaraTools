@@ -1,4 +1,5 @@
 using System.Numerics;
+using AzangaraTools.Extensions;
 using AzangaraTools.Structs;
 
 namespace AzangaraTools.Models;

@@ -20,4 +20,25 @@ public class Geometry
         
         return geom;
     }
+
+    public void Export(Stream stream)
+    {
+        stream.WriteStruct(Header with
+        {
+            Frames = Frames.Length,
+            VCount = Frames[0].Vertices.Length,
+            ICount = Frames[0].Indices.Length
+        });
+        foreach (var x in Frames)
+        {
+            foreach (var y in x.Vertices)
+            {
+                stream.WriteStruct(y);
+            }
+            foreach (var y in x.Indices)
+            {
+                stream.WriteStruct(y);
+            }
+        }
+    }
 }

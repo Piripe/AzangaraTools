@@ -62,7 +62,8 @@ public class Room
             Width = 256,
             Height = 256,
             SourceComp = ColorComponents.RedGreenBlueAlpha,
-            Data =stream.ReadArray<byte>(256 * 256 * 4)
+            Comp = ColorComponents.RedGreenBlueAlpha,
+            Data = stream.ReadArray<byte>(256 * 256 * 4)
         };
         //room.BitmapLightMap = stream.Read2DArray<Color>(256, 256);
 
@@ -85,6 +86,67 @@ public class Room
         
 
         return room;
+    }
+
+    public VirtualFile Export(string path)
+    {
+        var stream = new MemoryStream();
+        
+        stream.Seek(200, SeekOrigin.Begin);
+        var headers = Header with
+        {
+            ArrayOffset = (uint)stream.Position
+        };
+        stream.Write2DArray(RoomGeometry);
+        headers.GeometryOffset = (uint)stream.Position;
+        Geometry.Export(stream);
+        headers.GeometryOffset = (uint)stream.Position;
+        GeometryLightMap.Export(stream);
+        headers.BitmapLmOffset = (uint)stream.Position;
+        stream.Write(BitmapLightMap.Data);
+        headers.GeometryBackOffset = (uint)stream.Position;
+        GeometryBack.Export(stream);
+        headers.BboxOffset = (uint)stream.Position;
+        headers.BboxCount = (uint)Bbox.Length;
+        foreach (var x in Bbox)
+        {
+            stream.WriteStruct(x);
+        }
+        headers.LightTriOffset = (uint)stream.Position;
+        headers.LightTriCount = (uint)LightTri.Length;
+        foreach (var x in LightTri)
+        {
+            stream.WriteStruct(x);
+        }
+        headers.ShadTriOffset = (uint)stream.Position;
+        for (var i = 0; i < 29; i++)
+        {
+            var x = ShadTri[i];
+            headers.ShadTriCount[i] = (uint)x.Length;
+            foreach (var y in x)
+            {
+                stream.WriteStruct(y);
+            }
+        }
+        headers.LightsOffset = (uint)stream.Position;
+        headers.LightsCount = (uint)Lights.Length;
+        
+        foreach (var x in Lights)
+        {
+            stream.WriteStruct(x);
+        }
+        headers.StaticsOffset = (uint)stream.Position;
+        headers.StaticsCount = (uint)Statics.Length;
+        
+        foreach (var x in Statics)
+        {
+            stream.WriteStruct(x);
+        }
+        
+        stream.Seek(0, SeekOrigin.Begin);
+        stream.WriteStruct(headers);
+        
+        return new VirtualFile(path, stream.GetBuffer());
     }
 
     public Static[] GetStatics()

@@ -10,6 +10,22 @@ internal static class StreamExtensions
         stream.ReadExactly(buffer);
         return MemoryMarshal.Cast<byte, T>(buffer)[0];
     }
+    internal static void WriteStruct<T>(this Stream stream, T obj) where T : struct
+    {
+        Span<byte> buffer = stackalloc byte[Marshal.SizeOf<T>()];
+        stream.Write(MemoryMarshal.Cast<T, byte>([obj]));
+    }
+    internal static void Write2DArray<T>(this Stream stream, T[][] obj) where T : struct
+    {
+        foreach (var x in obj)
+        {
+            
+            foreach (var y in x)
+            {
+                WriteStruct(stream, y);
+            }
+        }
+    }
     internal static T[] ReadArray<T>(this Stream stream, int count = 1) where T : struct
     {
         int size = Marshal.SizeOf<T>() * count;
