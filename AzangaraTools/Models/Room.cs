@@ -91,7 +91,14 @@ public class Room
     public VirtualFile Export(string path)
     {
         var stream = new MemoryStream();
+
+        Export(stream);
         
+        return new VirtualFile(path, stream.GetBuffer());
+    }
+
+    public void Export(Stream stream)
+    {
         stream.Seek(200, SeekOrigin.Begin);
         var headers = Header with
         {
@@ -145,8 +152,6 @@ public class Room
         
         stream.Seek(0, SeekOrigin.Begin);
         stream.WriteStruct(headers);
-        
-        return new VirtualFile(path, stream.GetBuffer());
     }
 
     public Static[] GetStatics()

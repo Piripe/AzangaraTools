@@ -1,4 +1,5 @@
 using AzangaraTools.Extensions;
+using AzangaraTools.Models.File;
 using AzangaraTools.Structs;
 
 namespace AzangaraTools.Models;
@@ -19,6 +20,15 @@ public class Geometry
         ).ToArray();
         
         return geom;
+    }
+
+    public VirtualFile Export(string path)
+    {
+        var stream = new MemoryStream();
+
+        Export(stream);
+        
+        return new VirtualFile(path, stream.GetBuffer());
     }
 
     public void Export(Stream stream)
