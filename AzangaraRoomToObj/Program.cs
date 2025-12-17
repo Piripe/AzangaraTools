@@ -2,6 +2,7 @@
 using AzangaraTools;
 using AzangaraTools.Enums;
 using AzangaraTools.Models;
+using SharpGLTF.Animations;
 using SharpGLTF.Geometry;
 using SharpGLTF.Geometry.VertexTypes;
 using SharpGLTF.Materials;
@@ -10,8 +11,11 @@ using SharpGLTF.Scenes;
 using SharpGLTF.Schema2;
 using StbImageSharp;
 using AlphaMode = SharpGLTF.Materials.AlphaMode;
+using VPosNorm = SharpGLTF.Geometry.VertexTypes.VertexPositionNormal;
+using VTex = SharpGLTF.Geometry.VertexTypes.VertexTexture1;
+using VJoints = SharpGLTF.Geometry.VertexTypes.VertexJoints4;
 
-namespace AzangaraRoomToGltf
+namespace AzangaraRoomToObj
 {
     class Program
     {
@@ -22,38 +26,60 @@ namespace AzangaraRoomToGltf
                 Console.WriteLine("Folder: ");
                 var fr = FolderReader.ReadFolder("/media/hdd/Games/Azangara/Azangara/" ?? Console.ReadLine() ?? Environment.CurrentDirectory);
                 Console.WriteLine(string.Join('\n', fr.LoadedFiles.Keys.Where(x => x.StartsWith("models"))));
-                Console.WriteLine("Room file: ");
-                var roomPath = "levels/rooms_6/001.room" ?? Console.ReadLine() ?? "levels/rooms_6/001.room";
-                var room = fr.GetRoom(roomPath);
-                Console.WriteLine("Geometry image: ");
-                var geometryPath = "textures/rooms/5_01_floor.jpg" ?? Console.ReadLine() ?? "textures/rooms/5_01_floor.jpg";
-                Console.WriteLine("Back image: ");
-                var backPath = "textures/rooms/5_01_wall.jpg" ?? Console.ReadLine() ?? "textures/rooms/5_01_wall.jpg";
-                
-                var model = new SceneBuilder();
-
-                // Generate the geometries
-                ProcessGeometry("Geometry", null, room.Geometry.Frames[0], fr.GetImage(geometryPath), model);
-                ProcessGeometry("Back", null, room.GeometryBack.Frames[0], fr.GetImage(backPath), model);
-                ProcessGeometry("LightMap", null, room.GeometryLightMap.Frames[0], room.BitmapLightMap, model, true);
-                int staticIndex = 0;
-                foreach (var obj in room.GetStatics())
+                if (false)
                 {
-                    ProcessGeometry(
-                        "Static"+(staticIndex++), 
-                        obj.TexturePath,
-                        new Frame(
-                            obj.Model.Frames[0].GetTransformedVertices(obj.Definition.Transform),
-                            obj.Model.Frames[0].Indices), 
-                        obj.Texture, 
-                        model,
-                        obj.Definition.Alight == AlightMode.Multiply);
-                }
-                
+                    Console.WriteLine("Room file: ");
+                    var roomPath = "levels/rooms_6/001.room" ?? Console.ReadLine() ?? "levels/rooms_6/001.room";
+                    var room = fr.GetRoom(roomPath);
+                    Console.WriteLine("Geometry image: ");
+                    var geometryPath = "textures/rooms/5_01_floor.jpg" ??
+                                       Console.ReadLine() ?? "textures/rooms/5_01_floor.jpg";
+                    Console.WriteLine("Back image: ");
+                    var backPath = "textures/rooms/5_01_wall.jpg" ??
+                                   Console.ReadLine() ?? "textures/rooms/5_01_wall.jpg";
 
-                // Save the GLTF file
-                //string outputFileName = Path.ChangeExtension(args[0], ".gltf");
-                model.ToGltf2().Save(Path.GetFileNameWithoutExtension(roomPath) + ".glb");
+                    var model = new SceneBuilder();
+
+                    // Generate the geometries
+                    ProcessGeometry("Geometry", null, room.Geometry.Frames[0], fr.GetImage(geometryPath), model);
+                    ProcessGeometry("Back", null, room.GeometryBack.Frames[0], fr.GetImage(backPath), model);
+                    ProcessGeometry("LightMap", null, room.GeometryLightMap.Frames[0], room.BitmapLightMap, model,
+                        true);
+                    int staticIndex = 0;
+                    foreach (var obj in room.GetStatics())
+                    {
+                        ProcessGeometry(
+                            "Static" + (staticIndex++),
+                            obj.TexturePath,
+                            new Frame(
+                                obj.Model.Frames[0].GetTransformedVertices(obj.Definition.Transform),
+                                obj.Model.Frames[0].Indices),
+                            obj.Texture,
+                            model,
+                            obj.Definition.Alight == AlightMode.Multiply);
+                    }
+
+
+                    // Save the GLTF file
+                    //string outputFileName = Path.ChangeExtension(args[0], ".gltf");
+                    model.ToGltf2().Save(Path.GetFileNameWithoutExtension(roomPath) + ".glb");
+                }
+                else
+                {
+                    
+                    Console.WriteLine("Model file: ");
+                    var modelPath = "models/player.mmd" ?? Console.ReadLine() ?? "models/player.mmd";
+                    Console.WriteLine("Texture image: ");
+                    var geometryPath = "textures/player_skin.jpg" ?? Console.ReadLine() ?? "textures/player_skin.jpg";
+                    
+                    var originModel = fr.GetModel(modelPath);
+                    
+                    var model = new SceneBuilder();
+                    ProcessGeometryAnimation("Geometry", null, originModel.Frames, fr.GetImage(geometryPath), model);
+                    
+                    model.ToGltf2().Save(Path.GetFileNameWithoutExtension(modelPath) + ".glb");
+                    
+                }
             }
             catch (Exception e)
             {
@@ -94,7 +120,137 @@ namespace AzangaraRoomToGltf
             // Add normals
             //primitiveBuilder.UseNormals(frame.Vertices.Select(v => new Vector3(v.Normal.X, v.Normal.Y, v.Normal.Z)).ToArray());
 
-            model.AddRigidMesh(meshBuilder, Matrix4x4.Identity);
+
+
+            model.AddRigidMesh(meshBuilder,
+                Matrix4x4.Identity); //.UseScene("0").ToSceneBuilder().AddRigidMesh(meshBuilder, Matrix4x4.Identity);
+        }
+
+        static void ProcessGeometryAnimation(string name, string? objType, Frame[] frames, ImageResult? texture,
+            SceneBuilder model, bool transparent = false)
+        {
+            if (frames == null || frames.Length == 0) return;
+
+            // 1. Setup MeshBuilder with specific Vertex attributes
+            // VJoints is crucial: We use it to store the 'Original Vertex Index' (Joints.x)
+            // This ensures vertices aren't merged incorrectly and lets us map Deltas back to Frames.
+            var meshName = "AnimatedMesh";
+            var meshBuilder = new MeshBuilder<VPosNorm, VTex, VJoints>(meshName);
+
+            var primitive = meshBuilder.UsePrimitive(CreateMaterial(objType, frames[0], texture, model, transparent));
+
+            // 2. Build Base Geometry (Frame 0)
+            var baseFrame = frames[0];
+
+            // Create VertexBuilders for all vertices in Frame 0
+            var vertexBuilders = new VertexBuilder<VPosNorm, VTex, VJoints>[baseFrame.Vertices.Length];
+            for (int i = 0; i < baseFrame.Vertices.Length; i++)
+            {
+                var v = baseFrame.Vertices[i];
+                // Store 'i' (original index) in Joints.x
+                vertexBuilders[i] = new VertexBuilder<VPosNorm, VTex, VJoints>(
+                    new VPosNorm(v.Pos, v.Normal),
+                    new VTex(new Vector2(v.U, v.V)),
+                    new VJoints(i)
+                );
+            }
+
+            // Add Triangles to the Primitive
+            for (int i = 0; i < baseFrame.Indices.Length; i += 3)
+            {
+                primitive.AddTriangle(
+                    vertexBuilders[baseFrame.Indices[i]],
+                    vertexBuilders[baseFrame.Indices[i + 1]],
+                    vertexBuilders[baseFrame.Indices[i + 2]]
+                );
+            }
+
+            // 3. Apply Morph Targets (Deltas)
+            // We cast to IPrimitiveBuilder to access the low-level SetVertexDelta method
+            var primitiveReader = (IPrimitiveBuilder)primitive;
+            
+            var armature = new NodeBuilder();
+            armature.LocalTransform = Matrix4x4.Identity;//.CreateTranslation(0, 0, 0);
+            var inst = model.AddRigidMesh(meshBuilder, armature);
+
+            var morphTargets = frames.Skip(1).Select((_, i) => meshBuilder.UseMorphTarget(i)).ToList();
+
+            // Iterate over the ACTUAL vertices currently in the primitive 
+            // (Note: SharpGLTF might have reordered them or deduplicated exact matches)
+            for (int i = 0; i < primitive.Vertices.Count; i++)
+            {
+                var vertex = primitive.Vertices[i];
+
+                // Retrieve the Original Index we stored in Joints.x
+                // Joints are stored as (x,y,z,w), we used x.
+                int originalIndex = (int)vertex.Skinning.Joints.X;
+
+                var baseVert = baseFrame.Vertices[originalIndex];
+
+                // For each target frame (1..N), calculate and set the delta
+                for (int f = 1; f < frames.Length; f++)
+                {
+                    var targetFrame = frames[f];
+                    int morphTargetIndex = f - 1; // glTF Morph Targets are 0-indexed
+
+                    var targetVert = targetFrame.Vertices[originalIndex];
+
+                    // Calculate Delta (Target - Base)
+                    Vector3 posDelta = targetVert.Pos - baseVert.Pos;
+                    Vector3 normDelta = targetVert.Normal - baseVert.Normal;
+
+                    // Apply Delta
+                    // SetVertexDelta(morphIndex, vertexIndex, GeometryDelta, MaterialDelta)
+                    // We use default for MaterialDelta (Colors/UVs) as we are only morphing Geometry.
+                    /*primitiveReader.SetVertexDelta(
+                        morphTargetIndex,
+                        i,
+                        new VertexGeometryDelta(posDelta, normDelta, Vector3.Zero),
+                        default
+                    );*/
+                    //Console.WriteLine($"{morphTargets[morphTargetIndex].Vertices.Count} {primitive.Vertices.Count} {i}");
+                    
+                    
+                    morphTargets[morphTargetIndex].SetVertexDelta(primitive.Vertices[i].Position, new VertexGeometryDelta(posDelta, normDelta, Vector3.Zero));
+                }
+            }
+            
+            // 4. Create Node and Assign Mesh
+            //var node = model.AddNode().DefaultScene.CreateNode(); //new NodeBuilder("AnimNode_" + Guid.NewGuid());
+            //node.WithMesh(meshBuilder);
+            
+            int targetCount = frames.Length-1;
+            
+            inst.Content.UseMorphing().SetValue(new float[targetCount]);
+            
+            var track = inst.Content.UseMorphing().UseTrackBuilder("Default");
+
+            // 5. Generate Animation Track
+            // We animate the weights: Frame 0 -> Weights=0; Frame 1 -> Weight[0]=1, etc.
+            var timeStep = 1.0f / 12;
+            //var animation = new List<(float, float[])>();
+
+            for (int f = 0; f < frames.Length; f++)
+            {
+                float time = f * timeStep;
+                float[] weights = new float[targetCount];
+
+                // Activate the specific morph target for this frame
+                if (f > 0) weights[f - 1] = 1.0f;
+
+                track.SetPoint(time, weights, true); //, weights, false);
+                //animation.Add((time, weights));
+            }
+
+
+            /*var mesh = model.CreateMesh(meshBuilder);
+        node
+            .WithMesh(mesh)
+            ;*/
+        //Console.WriteLine(node.MorphWeights.Count); //.WithMorphingAnimation("GeometryPlayback", animation.CreateSampler(isLinear:false));
+        //model.AddNode(node);
+        
+        //.CreateNode(meshName); //.ToSceneBuilder().AddRigidMesh(Matrix4x4.Identity);
         }
 
         private static int materialCounter = 0;
