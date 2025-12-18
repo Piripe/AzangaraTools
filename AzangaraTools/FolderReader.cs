@@ -14,30 +14,6 @@ public class FolderReader
     public Dictionary<string,Geometry> LoadedModels = [];
     public Dictionary<string,ImageResult> LoadedImages = [];
 
-    public static IFile[] ReadPakFile(string path)
-    {
-        var file = File.OpenRead(path);
-        var reader = new BinaryReader(file);
-        
-        if (reader.ReadUInt32() != MagicNumber) throw new Exception("Invalid PAK file");
-        if (reader.ReadUInt16() != Version) throw new Exception("Invalid PAK version");
-        
-        var fileCount =  reader.ReadInt32() / 136;
-        
-        var files = new IFile[fileCount];
-        
-        for (var i = 0; i < fileCount; i++)
-        {
-            var filePath = System.Text.Encoding.UTF8.GetString(reader.ReadBytes(128).TakeWhile(x=>x!=0).ToArray());
-            var fileOffset = reader.ReadInt32();
-            var fileLength = reader.ReadInt32();
-            files[i] = new PakFile(reader, filePath, fileOffset, fileLength);
-            
-        }
-
-        return files;
-    }
-
     public static FolderReader ReadFolder(string path)
     {
         var fullPath = Path.GetFullPath(path);
@@ -47,7 +23,10 @@ public class FolderReader
         
         foreach (var file in rootFiles.Where(x=>x.EndsWith(".pak")))
         {
-            var pakFiles = ReadPakFile(file);
+            
+            var fs = File.OpenRead(file);
+            var pakFiles = PakHelper.Read(fs);
+            fs.Close();
 
             foreach (var pakFile in pakFiles)
             {

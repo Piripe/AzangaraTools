@@ -18,6 +18,25 @@ public class Help
 
                                   """);
                 break;
+            case "create_pak":
+                Console.WriteLine("""
+                                  Usage: AzangaraConverter.exe unpack_pak <in_dir> <pak_file>
+
+                                  Create a pak file from a folder.
+                                  """);
+                break;
+            case "in_folder":
+                Console.WriteLine("""
+                                  Usage: AzangaraConverter.exe in_folder <game_folder> <action>
+
+                                  Run an action within a folder in the way the game does. Allowing to load room statics.
+                                  
+                                  Actions:
+                                  
+                                  convert_mmd - Convert mmd file to obj or glb in both ways
+                                  room - Room extraction and patching utilities
+                                  """);
+                break;
             case "room":
                 switch (args.Count == 1 ? "help" : args[1])
                 {
@@ -77,16 +96,11 @@ public class Help
                 }
 
                 break;
-            case "in_folder":
+            case "unpack_pak":
                 Console.WriteLine("""
-                                  Usage: AzangaraConverter.exe in_folder <game_folder> <action>
+                                  Usage: AzangaraConverter.exe unpack_pak <pak_file> <out_dir>
 
-                                  Run an action within a folder in the way the game does. Allowing to load room statics.
-                                  
-                                  Actions:
-                                  
-                                  convert_mmd - Convert mmd file to obj or glb in both ways
-                                  room - Room extraction and patching utilities
+                                  Extract the content of a pak file to a folder.
                                   """);
                 break;
             default:
