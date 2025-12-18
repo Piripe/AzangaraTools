@@ -11,6 +11,7 @@ public class GameFolderStorageProvider(string folder) : BaseStorageProvider
 
     public override IFile GetFile(string path)
     {
+        Console.WriteLine("Reading file {0}", path);
         return _reader.LoadedFiles.TryGetValue(path, out var file) ? file : base.GetFile(path);
     }
 
@@ -18,6 +19,7 @@ public class GameFolderStorageProvider(string folder) : BaseStorageProvider
     {
         if (_reader.LoadedFiles.ContainsKey(path))
         {
+            Console.WriteLine("Loading model {0}", path);
             return _reader.GetModel(path);
         }
         return base.GetModel(path);
@@ -27,6 +29,7 @@ public class GameFolderStorageProvider(string folder) : BaseStorageProvider
     {
         if (_reader.LoadedFiles.ContainsKey(path))
         {
+            Console.WriteLine("Loading image {0}", path);
             return _reader.GetImage(path);
         }
         return base.GetImage(path);
@@ -37,6 +40,7 @@ public class GameFolderStorageProvider(string folder) : BaseStorageProvider
         if (Path.IsPathRooted(path))
         {
             base.WriteFile(path, content);
+            return;
         }
         
         base.WriteFile(Path.Combine(folder, path), content);
