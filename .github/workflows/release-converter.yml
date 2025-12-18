@@ -39,11 +39,7 @@ jobs:
       - name: Publish AzangaraConverter
         # We target the specific .csproj file here
         run: |
-          dotnet publish AzangaraConverter/AzangaraConverter.csproj -c Release \
-            -r ${{ matrix.runtime }} \
-            --self-contained true \
-            -p:PublishSingleFile=true \
-            -o ./publish/${{ matrix.runtime }}
+          dotnet publish AzangaraConverter/AzangaraConverter.csproj -c Release -r ${{ matrix.runtime }} --self-contained true -p:PublishSingleFile=true -o ./publish/${{ matrix.runtime }}
 
       - name: Package Artifact (Linux)
         if: matrix.os == 'ubuntu-latest'
