@@ -13,6 +13,7 @@ public class ConvertRoom
     {
         var actions = new Dictionary<string, Action<List<string>, IStorageProvider>>()
         {
+            {"extract", Extract.Run},
             {"glb", Glb.Run},
         };
 

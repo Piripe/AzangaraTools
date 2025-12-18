@@ -14,13 +14,28 @@ public class Help
 
                                   Arguments:
 
-                                  --texture (-t)   - Set texture image (only with glb output)
+                                  --texture (-t) <file>   - Set texture image (only with glb output)
 
                                   """);
                 break;
             case "convert_room":
                 switch (args.Count == 1 ? "help" : args[1])
                 {
+                    case "extract":
+                        Console.WriteLine("""
+                                          Usage: AzangaraConverter.exe convert_room glb [arguments] <room_file>
+
+                                          Convert room file to glb.
+                                          If used with in_folder action, every statics will be converted.
+                                          
+                                          Arguments:
+                                          
+                                          --geometry (-g) <obj_file>      - Export geometry to obj file
+                                          --geometry-back (-b) <obj_file> - Export geometry back to obj file
+                                          --geometry-lm (-m) <obj_file>   - Export geometry light map to obj file
+                                          --lm (-l) <png_file>            - Export light map to png file
+                                          """);
+                        break;
                     case "glb":
                         Console.WriteLine("""
                                           Usage: AzangaraConverter.exe convert_room glb [arguments] <room_file> <output_file>
@@ -30,8 +45,8 @@ public class Help
                                           
                                           Arguments:
                                           
-                                          --texture (-t)        - Set texture image
-                                          --back-texture (-b)   - Set back texture image
+                                          --texture (-t) <file>      - Set texture image
+                                          --back-texture (-b) <file> - Set back texture image
                                           """);
                         break;
                     default:
@@ -40,15 +55,9 @@ public class Help
                                       
                                       Actions:
                                       
-                                      extract_geometry - Convert room's geometry to obj or glb
-                                      extract_geometry_back - Convert room's geometry back to obj or glb
-                                      extract_geometry_lm - Convert room's geometry light map to obj or glb
-                                      extract_lm - Convert room's light map to png
+                                      extract - Extract room's geometry to obj or room's light map to png
                                       glb - Convert room file to glb 
-                                      patch_geometry - Convert room's geometry to obj or glb in both ways
-                                      patch_geometry_back - Convert room's geometry back to obj or glb in both ways
-                                      patch_geometry_lm - Convert room's geometry  to obj or glb in both ways
-                                      patch_lm - Convert room's geometry to obj or glb in both ways
+                                      patch - Patch room's geometry or light map from obj or png files
                                       """);
                         break;
                 }
