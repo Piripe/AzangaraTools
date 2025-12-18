@@ -1,0 +1,300 @@
+using System.Globalization;
+using System.Numerics;
+using System.Text;
+using AzangaraTools.Models;
+using AzangaraTools.Structs;
+
+namespace AzangaraConverter.Helpers;
+public class ObjModel
+    {
+        #region public methods
+
+        public static Geometry FromFile(string filename)
+        {
+            using (var stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                return FromStream(stream);
+            }
+        }
+
+        public static Geometry FromStream(Stream stream)
+        {
+            using (var reader = new StreamReader(stream, Encoding.ASCII, false, 4096, true))
+            {
+                return FromTextReader(reader);
+            }
+        }
+
+        public static Geometry FromTextReader(TextReader reader)
+        {
+            var instance = new ObjModel();
+            instance.Read(reader);
+            return instance.Build();
+        }
+
+        #endregion
+
+        protected ObjModel()
+        {
+        }
+
+        #region Reading raw obj data
+
+        protected class VertexInfo
+        {
+            public int V;
+            public int Vt;
+            public int Vn;
+        }
+
+        protected List<Vector3> ObjV = new List<Vector3>();
+
+        protected List<Vector2> ObjVt = new List<Vector2>();
+
+        protected List<Vector3> ObjVn = new List<Vector3>();
+
+        protected List<VertexInfo[]> ObjF = new List<VertexInfo[]>();
+
+        protected enum Key
+        {
+            V,
+            VT,
+            VN,
+            F,
+            G,
+            MTLLIB,
+            USEMTL,
+            S,
+            O,
+            P,
+            L,
+        }
+
+        protected static string[] Keywords
+            = Enum.GetNames(typeof(Key)).Select(name => name.ToLowerInvariant()).ToArray();
+
+        protected void Read(TextReader reader)
+        {
+            for (;;)
+            {
+                var line = reader.ReadLine();
+                if (line == null) break;
+                if (line.Length < 1) continue;
+                if (line[0] == '#') continue;
+
+                switch (GetObjKey(line))
+                {
+                    case Key.V:
+                        ObjV.Add(GetVertex3f(line));
+                        break;
+                    case Key.VT:
+                        ObjVt.Add(GetVertex2f(line));
+                        break;
+                    case Key.VN:
+                        ObjVn.Add(GetVertex3f(line));
+                        break;
+                    case Key.F:
+                        ObjF.Add(GetVertexInfoList(line));
+                        break;
+                    case Key.G:
+                    case Key.MTLLIB:
+                    case Key.USEMTL:
+                    case Key.S:
+                    case Key.O:
+                    case Key.P:
+                    case Key.L:
+                        break;
+                }
+            }
+        }
+
+        protected static Key GetObjKey(string line)
+        {
+            for (int i = 0; i < Keywords.Length; i++)
+            {
+                if (line.StartsWith(Keywords[i]))
+                {
+                    var c = line[Keywords[i].Length];
+                    if (c == ' ' || c == '\t') return (Key)i;
+                }
+            }
+            throw new Exception(string.Format("unrecognized obj line: {0}", line));
+        }
+
+        protected static char[] DELIMITERS = { ' ', '\t' };
+
+        protected static Vector2 GetVertex2f(string line)
+        {
+            var items = line.Split(DELIMITERS, 4, StringSplitOptions.RemoveEmptyEntries);
+            if (items.Length != 3) throw new Exception(string.Format("invalid obj line: {0}", line));
+            return new Vector2(
+                float.Parse(items[1], CultureInfo.InvariantCulture),
+                float.Parse(items[2], CultureInfo.InvariantCulture));
+        }
+
+        protected static Vector3 GetVertex3f(string line)
+        {
+            var items = line.Split(DELIMITERS, 5, StringSplitOptions.RemoveEmptyEntries);
+            if (items.Length != 4) throw new Exception(string.Format("invalid obj line: {0}", line));
+            return new Vector3(
+                float.Parse(items[1], CultureInfo.InvariantCulture),
+                float.Parse(items[2], CultureInfo.InvariantCulture),
+                float.Parse(items[3], CultureInfo.InvariantCulture));
+        }
+
+        protected VertexInfo[] GetVertexInfoList(string line)
+        {
+            var items = line.Split(DELIMITERS, StringSplitOptions.RemoveEmptyEntries);
+            if (items.Length < 4) throw new Exception(string.Format("invalid obj line: {0}", line));
+            var a = new VertexInfo[items.Length - 1];
+            for (int i = 1; i < items.Length; i++)
+            {
+                a[i - 1] = ParseVertexInfo(items[i]);
+            }
+            return a;
+        }
+
+        protected static char[] SLANT = { '/' };
+
+        protected VertexInfo ParseVertexInfo(string info)
+        {
+            var items = info.Split(SLANT, 4, StringSplitOptions.None);
+            switch (items.Length)
+            {
+                case 1:
+                    return new VertexInfo()
+                    {
+                        V = GetIndex(items[0], ObjV.Count)
+                    };
+                case 2:
+                    return new VertexInfo()
+                    {
+                        V = GetIndex(items[0], ObjV.Count),
+                        Vt = GetIndex(items[1], ObjVt.Count)
+                    };
+                case 3:
+                    return new VertexInfo()
+                    {
+                        V = GetIndex(items[0], ObjV.Count),
+                        Vt = GetIndex(items[1], ObjVt.Count),
+                        Vn = GetIndex(items[2], ObjVn.Count)
+                    };
+                default:
+                    throw new Exception();
+            }
+        }
+
+        protected static int GetIndex(string value, int count)
+        {
+            if (value == "") return 0;
+            var n = int.Parse(value);
+            if (n >= 0) return n;
+            n += count + 1;
+            if (n > 0) return n;
+            throw new Exception();
+        }
+
+        #endregion
+
+        #region IMesh building
+
+        protected List<Vertice> Vertices;
+
+        protected List<ushort> Faces;
+
+        //protected HashSet<EdgeInfo> Edges;
+
+        protected Geometry Build()
+        {
+            Vertices = new List<Vertice>(ObjV.Count * 4);
+            Faces = new List<ushort>(ObjF.Count * 3);
+            //Edges = new HashSet<EdgeInfo>();
+
+            foreach (var f in ObjF)
+            {
+                var p = AddMeshVertex(f[0]);
+                var q = AddMeshVertex(f[1]);
+                //AddMeshEdge(p, q);
+                for (int i = 2; i < f.Length; i++)
+                {
+                    var r = AddMeshVertex(f[i]);
+                    AddMeshTriangle(p, q, r);
+                    //AddMeshEdge(q, r);
+                    q = r;
+                }
+                //AddMeshEdge(q, p);
+            }
+
+            return new Geometry { Frames = [new Frame(Vertices.ToArray(), Faces.ToArray())], Header = new GeometryHeader {Frames = 1, FCount = 0, ICount = Faces.Count, VCount = Vertices.Count, Version = 5}}; //(Vertices.ToArray(), Faces.ToArray(), GetEdgesArray());
+        }
+
+        protected ushort AddMeshVertex(VertexInfo info)
+        {
+            var v = new Vertice();
+            v.Pos = info.V <= 0 ? Vector3.Zero : ObjV[info.V - 1];
+            v.Normal = info.Vn <= 0 ? Vector3.Zero : ObjVn[info.Vn - 1];
+            var uv = info.Vt <= 0 ? Vector2.Zero : ObjVt[info.Vt - 1];
+            v.U = uv.X;
+            v.V = uv.Y;
+
+            var i = (ushort)Vertices.Count;
+            Vertices.Add(v);
+            return i;
+        }
+
+        protected void AddMeshTriangle(ushort i, ushort j, ushort k)
+        {
+            Faces.Add(i);
+            Faces.Add(j);
+            Faces.Add(k);
+        }
+/*
+        protected void AddMeshEdge(int i, int j)
+        {
+            Edges.Add(new EdgeInfo(Vertices[i].Coord, Vertices[j].Coord, i, j));
+        }
+
+        protected int[] GetEdgesArray()
+        {
+            var array = new int[Edges.Count * 2];
+            int i = 0;
+            foreach (var e in Edges)
+            {
+                array[i++] = e.IA;
+                array[i++] = e.IB;
+            }
+            return array;
+        }
+
+        protected class EdgeInfo
+        {
+            private readonly Vertex3f A, B;
+
+            public readonly int IA, IB;
+
+            private readonly int HashCode;
+
+            public EdgeInfo(Vertex3f a, Vertex3f b, int ia, int ib)
+            {
+                A = a;
+                B = b;
+                IA = ia;
+                IB = ib;
+                HashCode = a.GetHashCode() + b.GetHashCode();
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (obj == null || !(obj is EdgeInfo)) return false;
+                var e = obj as EdgeInfo;
+                return (A == e.A && B == e.B) || (A == e.B && B == e.A);
+            }
+
+            public override int GetHashCode()
+            {
+                return HashCode;
+            }
+        }
+*/
+        #endregion
+    }

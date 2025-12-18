@@ -14,7 +14,7 @@ public class FolderReader
     public Dictionary<string,Geometry> LoadedModels = [];
     public Dictionary<string,ImageResult> LoadedImages = [];
 
-    private static IFile[] ReadPakFile(string path)
+    public static IFile[] ReadPakFile(string path)
     {
         var file = File.OpenRead(path);
         var reader = new BinaryReader(file);

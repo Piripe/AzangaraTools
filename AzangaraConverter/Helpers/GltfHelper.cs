@@ -1,107 +1,22 @@
-﻿using System.Numerics;
-using AzangaraTools;
-using AzangaraTools.Enums;
+using System.Numerics;
 using AzangaraTools.Models;
-using SharpGLTF.Animations;
 using SharpGLTF.Geometry;
 using SharpGLTF.Geometry.VertexTypes;
 using SharpGLTF.Materials;
 using SharpGLTF.Memory;
 using SharpGLTF.Scenes;
-using SharpGLTF.Schema2;
 using StbImageSharp;
 using AlphaMode = SharpGLTF.Materials.AlphaMode;
 using VPosNorm = SharpGLTF.Geometry.VertexTypes.VertexPositionNormal;
 using VTex = SharpGLTF.Geometry.VertexTypes.VertexTexture1;
 using VJoints = SharpGLTF.Geometry.VertexTypes.VertexJoints4;
 
-namespace AzangaraRoomToObj
+namespace AzangaraConverter.Helpers;
+
+public class GltfHelper
 {
-    class Program
-    {
-        static void Main(string[] args)
-        {
-            try
-            {
-                Console.WriteLine("Folder: ");
-                var fr = FolderReader.ReadFolder("/media/hdd/Games/Azangara/Azangara/" ?? Console.ReadLine() ?? Environment.CurrentDirectory);
-                Console.WriteLine(string.Join('\n', fr.LoadedFiles.Keys.Where(x => x.StartsWith("models"))));
-                if (false)
-                {
-                    Console.WriteLine("Room file: ");
-                    var roomPath = "levels/rooms_6/001.room" ?? Console.ReadLine() ?? "levels/rooms_6/001.room";
-                    var room = fr.GetRoom(roomPath);
-                    Console.WriteLine("Geometry image: ");
-                    var geometryPath = "textures/rooms/5_01_floor.jpg" ??
-                                       Console.ReadLine() ?? "textures/rooms/5_01_floor.jpg";
-                    Console.WriteLine("Back image: ");
-                    var backPath = "textures/rooms/5_01_wall.jpg" ??
-                                   Console.ReadLine() ?? "textures/rooms/5_01_wall.jpg";
-
-                    var model = new SceneBuilder();
-
-                    // Generate the geometries
-                    ProcessGeometry("Geometry", null, room.Geometry.Frames[0], fr.GetImage(geometryPath), model);
-                    ProcessGeometry("Back", null, room.GeometryBack.Frames[0], fr.GetImage(backPath), model);
-                    ProcessGeometry("LightMap", null, room.GeometryLightMap.Frames[0], room.BitmapLightMap, model,
-                        true);
-                    int staticIndex = 0;
-                    foreach (var obj in room.GetStatics())
-                    {
-                        ProcessGeometry(
-                            "Static" + (staticIndex++),
-                            obj.TexturePath,
-                            new Frame(
-                                obj.Model.Frames[0].GetTransformedVertices(obj.Definition.Transform),
-                                obj.Model.Frames[0].Indices),
-                            obj.Texture,
-                            model,
-                            obj.Definition.Alight == AlightMode.Multiply);
-                    }
-
-
-                    // Save the GLTF file
-                    //string outputFileName = Path.ChangeExtension(args[0], ".gltf");
-                    model.ToGltf2().Save(Path.GetFileNameWithoutExtension(roomPath) + ".glb");
-                }
-                else
-                {
-                    
-                    Console.WriteLine("Model file: ");
-                    var modelPath = "models/player.mmd" ?? Console.ReadLine() ?? "models/player.mmd";
-                    Console.WriteLine("Texture image: ");
-                    var geometryPath = "textures/player_skin.jpg" ?? Console.ReadLine() ?? "textures/player_skin.jpg";
-                    
-                    var originModel = fr.GetModel(modelPath);
-                    
-                    var model = new SceneBuilder();
-                    ProcessGeometryAnimation("Geometry", null, originModel.Frames, fr.GetImage(geometryPath), model);
-                    
-                    model.ToGltf2().Save(Path.GetFileNameWithoutExtension(modelPath) + ".glb");
-                    
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
-        }
-
-        static Frame MergeFrames(params Frame[] frames)
-        {
-            var offset = 0;
-            return new Frame(
-                frames.SelectMany(x => x.Vertices).ToArray(),
-                frames.SelectMany(x =>
-                {
-                    var offset1 = offset;
-                    offset += x.Vertices.Length;
-                    return x.Indices.Select(y => (ushort)(y + offset1));
-                }).ToArray());
-        }
-
-        
-        static void ProcessGeometry(string name, string? objType, Frame frame, ImageResult? texture, SceneBuilder model, bool transparent = false)
+    
+        public static void ProcessGeometry(string name, string? objType, Frame frame, ImageResult? texture, SceneBuilder model, bool transparent = false)
         {
             var meshBuilder = new MeshBuilder<VertexPositionNormal, VertexTexture1>(name);
             var vertices = frame.Vertices.Select(v => new VertexBuilder<VertexPositionNormal, VertexTexture1, VertexEmpty>(new VertexPositionNormal(v.Pos, v.Normal), new VertexTexture1(new Vector2(v.U,v.V)))).ToArray();
@@ -126,7 +41,7 @@ namespace AzangaraRoomToObj
                 Matrix4x4.Identity); //.UseScene("0").ToSceneBuilder().AddRigidMesh(meshBuilder, Matrix4x4.Identity);
         }
 
-        static void ProcessGeometryAnimation(string name, string? objType, Frame[] frames, ImageResult? texture,
+        public static void ProcessGeometryAnimation(string name, string? objType, Frame[] frames, ImageResult? texture,
             SceneBuilder model, bool transparent = false)
         {
             if (frames == null || frames.Length == 0) return;
@@ -134,8 +49,7 @@ namespace AzangaraRoomToObj
             // 1. Setup MeshBuilder with specific Vertex attributes
             // VJoints is crucial: We use it to store the 'Original Vertex Index' (Joints.x)
             // This ensures vertices aren't merged incorrectly and lets us map Deltas back to Frames.
-            var meshName = "AnimatedMesh";
-            var meshBuilder = new MeshBuilder<VPosNorm, VTex, VJoints>(meshName);
+            var meshBuilder = new MeshBuilder<VPosNorm, VTex, VJoints>(name);
 
             var primitive = meshBuilder.UsePrimitive(CreateMaterial(objType, frames[0], texture, model, transparent));
 
@@ -255,7 +169,7 @@ namespace AzangaraRoomToObj
 
         private static int materialCounter = 0;
         private static Dictionary<string, MaterialBuilder> materials = [];
-        static MaterialBuilder CreateMaterial(string? name, Frame? frame, ImageResult? texture, SceneBuilder model, bool transparent = false)
+        public static MaterialBuilder CreateMaterial(string? name, Frame? frame, ImageResult? texture, SceneBuilder model, bool transparent = false)
         {
             if (materials.TryGetValue(name??"", out var mb)) return mb;
             var materialBuilder = new MaterialBuilder(name ?? "Material" + (++materialCounter));
@@ -269,8 +183,8 @@ namespace AzangaraRoomToObj
                     texture.Height,
                     (StbImageWriteSharp.ColorComponents)texture.Comp, 
                     s);
-                Console.WriteLine(s.Length + " bytes written.");
-                File.WriteAllBytes((name?.Replace('/','_') ?? "Material" + (materialCounter)) + ".png", s.GetBuffer());
+                //Console.WriteLine(s.Length + " bytes written.");
+                //File.WriteAllBytes((name?.Replace('/','_') ?? "Material" + (materialCounter)) + ".png", s.GetBuffer());
                 materialBuilder
                     .WithBaseColor(ImageBuilder.From(new MemoryImage(s.GetBuffer())),Vector4.One)
                     .WithEmissive(ImageBuilder.From(new MemoryImage(s.GetBuffer())),Vector3.One, 1);
@@ -281,5 +195,4 @@ namespace AzangaraRoomToObj
             // Define material properties as needed, e.g., colors, textures.
             return materialBuilder;
         }
-    }
 }

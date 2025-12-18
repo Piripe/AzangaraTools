@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzangaraRoomToObj", "AzangaraRoomToObj\AzangaraRoomToObj.csproj", "{FEED2A57-43B9-4D0E-9A9C-84E160182BFF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzangaraConverter", "AzangaraConverter\AzangaraConverter.csproj", "{FEED2A57-43B9-4D0E-9A9C-84E160182BFF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzangaraTools", "AzangaraTools\AzangaraTools.csproj", "{C5E07B16-43AF-4B8B-BA2D-F6316B33619D}"
 EndProject
