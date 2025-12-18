@@ -1,0 +1,64 @@
+name: Build and Release AzangaraConverter
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    name: Build for ${{ matrix.runtime }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            runtime: linux-x64
+            artifact_name: AzangaraConverter-linux-x64
+            extension: .tar.gz
+          - os: windows-latest
+            runtime: win-x64
+            artifact_name: AzangaraConverter-win-x64
+            extension: .zip
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore Dependencies
+        # Restoring the specific project ensures all dependencies for AzangaraConverter are met
+        run: dotnet restore AzangaraConverter/AzangaraConverter.csproj
+
+      - name: Publish AzangaraConverter
+        # We target the specific .csproj file here
+        run: |
+          dotnet publish AzangaraConverter/AzangaraConverter.csproj -c Release \
+            -r ${{ matrix.runtime }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -o ./publish/${{ matrix.runtime }}
+
+      - name: Package Artifact (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          tar -czvf ${{ matrix.artifact_name }}${{ matrix.extension }} -C ./publish/${{ matrix.runtime }} .
+
+      - name: Package Artifact (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path ./publish/${{ matrix.runtime }}/* -DestinationPath ${{ matrix.artifact_name }}${{ matrix.extension }}
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact_name }}${{ matrix.extension }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
