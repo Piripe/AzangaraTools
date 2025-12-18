@@ -1,3 +1,4 @@
+using AzangaraConverter.Actions.Room;
 using AzangaraConverter.Storage;
 
 namespace AzangaraConverter.Actions;
@@ -10,7 +11,18 @@ public class ConvertRoom
     }
     public static void Run(List<string> args, IStorageProvider storage)
     {
-        
+        var actions = new Dictionary<string, Action<List<string>, IStorageProvider>>()
+        {
+            {"glb", Glb.Run},
+        };
+
+        if (args.Count >= 1 && actions.TryGetValue(args[0], out var action))
+        {
+            action(args.Skip(1).ToList(), storage);
+            return;
+        }
+            
+        Help.Run(["convert_room"]);
     }
     
     /*

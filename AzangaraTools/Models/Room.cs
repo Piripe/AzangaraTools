@@ -21,17 +21,25 @@ public class Room
     public LightDefinition[] Lights { get; set; } = null!;
     public StaticDefinition[] Statics { get; set; } = null!;
     private Static[]? _loadedStatics;
-    private FolderReader _folderReader = null!;
+    private FolderReader? _folderReader;
 
     internal static Room Load(FolderReader folderReader, IFile roomFile)
     {
         var stream = roomFile.OpenRead();
 
+        var room = Load(stream);
+        room._folderReader = folderReader;
+        
+        return room;
+    }
+
+    public static Room Load(Stream stream)
+    {
+        
         var startPos = stream.Position;
         var room = new Room
         {
-            Header = stream.ReadStruct<RoomHeader>(),
-            _folderReader =  folderReader
+            Header = stream.ReadStruct<RoomHeader>()
         };
 
         if (room.Header.MagicNumber != 0x524D)
@@ -156,6 +164,7 @@ public class Room
 
     public Static[] GetStatics()
     {
+        if (_folderReader == null) return [];
         _loadedStatics ??= Statics.Select(x => Static.Load(_folderReader, x)).ToArray();
         return _loadedStatics;
     }

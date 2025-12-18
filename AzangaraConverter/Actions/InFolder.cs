@@ -12,7 +12,7 @@ public class InFolder
             {"convert_room", ConvertRoom.Run},
         };
 
-        if (args.Count > 2 && actions.TryGetValue(args[1], out var action))
+        if (args.Count >= 2 && actions.TryGetValue(args[1], out var action))
         {
             action(args.Skip(2).ToList(), new GameFolderStorageProvider(args[0]));
             return;

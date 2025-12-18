@@ -17,22 +17,26 @@ public class GameFolderStorageProvider(string folder) : BaseStorageProvider
 
     public override Geometry GetModel(string path)
     {
-        if (_reader.LoadedFiles.ContainsKey(path))
-        {
-            Console.WriteLine("Loading model {0}", path);
-            return _reader.GetModel(path);
-        }
-        return base.GetModel(path);
+        if (!_reader.LoadedFiles.ContainsKey(path)) return base.GetModel(path);
+        
+        Console.WriteLine("Loading model {0}", path);
+        return _reader.GetModel(path);
     }
 
     public override ImageResult GetImage(string path)
     {
-        if (_reader.LoadedFiles.ContainsKey(path))
-        {
-            Console.WriteLine("Loading image {0}", path);
-            return _reader.GetImage(path);
-        }
-        return base.GetImage(path);
+        if (!_reader.LoadedFiles.ContainsKey(path)) return base.GetImage(path);
+        
+        Console.WriteLine("Loading image {0}", path);
+        return _reader.GetImage(path);
+    }
+
+    public override Room GetRoom(string path)
+    {
+        if (!_reader.LoadedFiles.ContainsKey(path)) return base.GetRoom(path);
+        
+        Console.WriteLine("Loading room {0}", path);
+        return _reader.GetRoom(path);
     }
 
     public override void WriteFile(string path, byte[] content)

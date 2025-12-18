@@ -32,6 +32,17 @@ public class BaseStorageProvider : IStorageProvider
         return model;
     }
 
+    public virtual Room GetRoom(string path)
+    {
+        Console.WriteLine("Loading room {0}", path);
+        var file = GetFile(path);
+        
+        var room = Room.Load(file.OpenRead());
+        file.CloseRead();
+        
+        return room;
+    }
+
     public virtual void WriteFile(string path, byte[] content)
     {
         Console.WriteLine("Writing {0}", path);

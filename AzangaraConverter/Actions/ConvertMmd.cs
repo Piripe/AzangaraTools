@@ -18,7 +18,7 @@ public class ConvertMmd
 
         while(args.Count > 2) {
            var arg = args[0];
-           if (arg.StartsWith("-"))
+           if (arg.StartsWith('-'))
            {
                args.RemoveAt(0);
                switch (arg)
