@@ -9,7 +9,7 @@ public class InFolder
         var actions = new Dictionary<string, Action<List<string>, IStorageProvider>>()
         {
             {"convert_mmd", ConvertMmd.Run},
-            {"convert_room", ConvertRoom.Run},
+            {"room", ConvertRoom.Run},
         };
 
         if (args.Count >= 2 && actions.TryGetValue(args[1], out var action))

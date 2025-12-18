@@ -18,15 +18,14 @@ public class Help
 
                                   """);
                 break;
-            case "convert_room":
+            case "room":
                 switch (args.Count == 1 ? "help" : args[1])
                 {
                     case "extract":
                         Console.WriteLine("""
-                                          Usage: AzangaraConverter.exe convert_room glb [arguments] <room_file>
+                                          Usage: AzangaraConverter.exe room extract [arguments] <room_file>
 
-                                          Convert room file to glb.
-                                          If used with in_folder action, every statics will be converted.
+                                          Extract room's geometry to obj or room's light map to png.
                                           
                                           Arguments:
                                           
@@ -38,7 +37,7 @@ public class Help
                         break;
                     case "glb":
                         Console.WriteLine("""
-                                          Usage: AzangaraConverter.exe convert_room glb [arguments] <room_file> <output_file>
+                                          Usage: AzangaraConverter.exe room glb [arguments] <room_file> <output_file>
 
                                           Convert room file to glb.
                                           If used with in_folder action, every statics will be converted.
@@ -49,9 +48,24 @@ public class Help
                                           --back-texture (-b) <file> - Set back texture image
                                           """);
                         break;
+                    case "patch":
+                        Console.WriteLine("""
+                                          Usage: AzangaraConverter.exe room patch [arguments] <room_file>
+
+                                          Patch room's geometry or light map from obj or png files.
+                                          
+                                          Arguments:
+                                          
+                                          --geometry (-g) <obj_file>      - Patch geometry from obj file
+                                          --geometry-back (-b) <obj_file> - Patch geometry back from obj file
+                                          --geometry-lm (-m) <obj_file>   - Patch geometry light map from obj file
+                                          --lm (-l) <png_file>            - Patch light map from png file
+                                          --output (-o) <room_file>       - Set output room file (if not set, input file will be overwritten)
+                                          """);
+                        break;
                     default:
                     Console.WriteLine("""
-                                      Usage: AzangaraConverter.exe convert_room <action>
+                                      Usage: AzangaraConverter.exe room <action>
                                       
                                       Actions:
                                       
@@ -72,7 +86,7 @@ public class Help
                                   Actions:
                                   
                                   convert_mmd - Convert mmd file to obj or glb in both ways
-                                  convert_room - Convert room file to obj or glb in both ways
+                                  room - Room extraction and patching utilities
                                   """);
                 break;
             default:
@@ -82,10 +96,10 @@ public class Help
                                   Actions:
                                   
                                   convert_mmd - Convert mmd file to obj or glb in both ways
-                                  convert_room - Convert room file to obj or glb in both ways
                                   create_pak - Create a pak file from a folder
                                   help - Show help for an action
                                   in_folder - Run an action within a folder in the way the game does
+                                  room - Room extraction and patching utilities
                                   unpack_pak - Extract the content of a pak file
                                   
                                   """);

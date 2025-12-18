@@ -21,7 +21,7 @@ namespace AzangaraConverter
             var actions = new Dictionary<string, Action<List<string>>>()
             {
                 {"convert_mmd", ConvertMmd.Run},
-                {"convert_room", ConvertRoom.Run},
+                {"room", ConvertRoom.Run},
                 {"create_pak", CreatePak.Run},
                 {"help",  Help.Run},
                 {"in_folder", InFolder.Run},

@@ -46,6 +46,7 @@ public class BaseStorageProvider : IStorageProvider
     public virtual void WriteFile(string path, byte[] content)
     {
         Console.WriteLine("Writing {0}", path);
+        Directory.CreateDirectory(Path.GetDirectoryName(path) ?? "");
         File.WriteAllBytes(path, content);
     }
 }

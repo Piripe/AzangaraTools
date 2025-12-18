@@ -15,6 +15,7 @@ public class ConvertRoom
         {
             {"extract", Extract.Run},
             {"glb", Glb.Run},
+            {"patch", Patch.Run},
         };
 
         if (args.Count >= 1 && actions.TryGetValue(args[0], out var action))
@@ -23,7 +24,7 @@ public class ConvertRoom
             return;
         }
             
-        Help.Run(["convert_room"]);
+        Help.Run(["room"]);
     }
     
     /*

@@ -1,14 +1,15 @@
 using AzangaraConverter.Helpers;
 using AzangaraConverter.Storage;
+using StbImageSharp;
 
 namespace AzangaraConverter.Actions.Room;
 
-public class Extract
+public class Patch
 {
 
     public static void Run(List<string> args, IStorageProvider storage)
     {
-        string? geometryPath = null, geometryBackPath = null, geometryLmPath = null, lmPath = null;
+        string? geometryPath = null, geometryBackPath = null, geometryLmPath = null, lmPath = null, outputPath = null;
         while(args.Count > 1) {
             var arg = args[0];
             if (arg.StartsWith('-'))
@@ -32,9 +33,13 @@ public class Extract
                     case "-l":
                         lmPath = args[0];
                         break;
+                    case "--output":
+                    case "-o":
+                        outputPath = args[0];
+                        break;
                     default:
                         Console.WriteLine("WARNING: Unknown argument " + arg);
-                        Help.Run(["room","extract"]);
+                        Help.Run(["room","patch"]);
                         return;
 
                 }
@@ -45,7 +50,7 @@ public class Extract
         
         if (args.Count < 1)
         {
-            Help.Run(["room","extract"]);
+            Help.Run(["room","patch"]);
             return;
         }
         
@@ -54,7 +59,7 @@ public class Extract
         if (!inputPath.EndsWith(".room"))
         {
             Console.WriteLine("WARNING: Only .room files are supported as input");
-            Help.Run(["room","extract"]);
+            Help.Run(["room","patch"]);
             return;
         }
         
@@ -64,66 +69,67 @@ public class Extract
         {
             if (!geometryPath.EndsWith(".obj"))
             {
-                Console.WriteLine("WARNING: Only .obj files are supported as geometry output");
-                Help.Run(["room","extract"]);
+                Console.WriteLine("WARNING: Only .obj files are supported as geometry input");
+                Help.Run(["room","patch"]);
                 return;
             }
 
-            using var s = new MemoryStream();
-            ObjHelper.WriteFrameToObj(room.Geometry.Frames[0], s);
-                    
-            storage.WriteFile(geometryPath, s.ToArray());
+            var objFile = storage.GetFile(geometryPath);
+            room.Geometry = ObjModel.FromStream(objFile.OpenRead());
+            objFile.CloseRead();
         }
         
         if (geometryBackPath != null)
         {
             if (!geometryBackPath.EndsWith(".obj"))
             {
-                Console.WriteLine("WARNING: Only .obj files are supported as geometry back output");
-                Help.Run(["room","extract"]);
+                Console.WriteLine("WARNING: Only .obj files are supported as geometry back input");
+                Help.Run(["room","patch"]);
                 return;
             }
 
-            using var s = new MemoryStream();
-            ObjHelper.WriteFrameToObj(room.GeometryBack.Frames[0], s);
-                    
-            storage.WriteFile(geometryBackPath, s.ToArray());
+            var objFile = storage.GetFile(geometryBackPath);
+            room.GeometryBack = ObjModel.FromStream(objFile.OpenRead());
+            objFile.CloseRead();
         }
         
         if (geometryLmPath != null)
         {
             if (!geometryLmPath.EndsWith(".obj"))
             {
-                Console.WriteLine("WARNING: Only .obj files are supported as geometry light map output");
-                Help.Run(["room","extract"]);
+                Console.WriteLine("WARNING: Only .obj files are supported as geometry light map input");
+                Help.Run(["room","patch"]);
                 return;
             }
 
-            using var s = new MemoryStream();
-            ObjHelper.WriteFrameToObj(room.GeometryLightMap.Frames[0], s);
-                    
-            storage.WriteFile(geometryLmPath, s.ToArray());
+            var objFile = storage.GetFile(geometryLmPath);
+            room.GeometryLightMap = ObjModel.FromStream(objFile.OpenRead());
+            objFile.CloseRead();
         }
         
         if (lmPath != null)
         {
             if (!lmPath.EndsWith(".png"))
             {
-                Console.WriteLine("WARNING: Only .png files are supported as light map output");
-                Help.Run(["room","extract"]);
+                Console.WriteLine("WARNING: Only .png files are supported as light map input");
+                Help.Run(["room","patch"]);
                 return;
             }
 
-            using var s = new MemoryStream();
-            
-            new StbImageWriteSharp.ImageWriter().WritePng(
-                room.BitmapLightMap.Data, 
-                room.BitmapLightMap.Width, 
-                room.BitmapLightMap.Height,
-                (StbImageWriteSharp.ColorComponents)room.BitmapLightMap.Comp, 
-                s);
-                    
-            storage.WriteFile(lmPath, s.ToArray());
+            var pngFile = storage.GetFile(lmPath);
+            room.BitmapLightMap = ImageResult.FromStream(pngFile.OpenRead());
+            pngFile.CloseRead();
         }
+
+        if (outputPath != null && !outputPath.EndsWith(".room"))
+        {
+            
+            Console.WriteLine("WARNING: Only .room files are supported as output");
+            Help.Run(["room","patch"]);
+            return;
+        }
+        using var result = new MemoryStream();
+        room.Export(result);
+        storage.WriteFile(outputPath ?? inputPath, result.ToArray());
     }
 }

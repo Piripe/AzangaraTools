@@ -26,19 +26,19 @@ public class Glb
                     case "--texture":
                     case "-t":
                         texture = storage.GetImage(args[0]);
-                        args.RemoveAt(0);
                         break;
                     case "--back-texture":
                     case "-b":
                         backTexture = storage.GetImage(args[0]);
-                        args.RemoveAt(0);
                         break;
                     default:
                         Console.WriteLine("WARNING: Unknown argument " + arg);
-                        Help.Run(["convert_room","glb"]);
+                        Help.Run(["room","glb"]);
                         return;
 
                 }
+
+                args.RemoveAt(0);
             }
         }
         
