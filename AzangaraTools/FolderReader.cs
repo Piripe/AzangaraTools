@@ -26,7 +26,6 @@ public class FolderReader
             
             var fs = File.OpenRead(file);
             var pakFiles = PakHelper.Read(fs);
-            fs.Close();
 
             foreach (var pakFile in pakFiles)
             {
