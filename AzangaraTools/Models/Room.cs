@@ -115,12 +115,12 @@ public class Room
         stream.Write2DArray(RoomGeometry);
         headers.GeometryOffset = (uint)stream.Position;
         Geometry.Export(stream);
-        headers.GeometryOffset = (uint)stream.Position;
+        headers.GeometryLmOffset = (uint)stream.Position;
         GeometryLightMap.Export(stream);
-        headers.BitmapLmOffset = (uint)stream.Position;
-        stream.Write(BitmapLightMap.Data);
         headers.GeometryBackOffset = (uint)stream.Position;
         GeometryBack.Export(stream);
+        headers.BitmapLmOffset = (uint)stream.Position;
+        stream.Write(BitmapLightMap.Data);
         headers.BboxOffset = (uint)stream.Position;
         headers.BboxCount = (uint)Bbox.Length;
         foreach (var x in Bbox)

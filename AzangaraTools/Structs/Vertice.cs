@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace AzangaraTools.Structs;
 
 [StructLayout(LayoutKind.Explicit, Size=32, CharSet=CharSet.Ansi)]
-public struct Vertice
+public record struct Vertice
 {
     [FieldOffset(0)] public Vector3 Pos;
     [FieldOffset(12)] public Vector3 Normal;

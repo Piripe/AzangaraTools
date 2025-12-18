@@ -225,7 +225,7 @@ public class ObjModel
                 //AddMeshEdge(q, p);
             }
 
-            return new Geometry { Frames = [new Frame(Vertices.ToArray(), Faces.ToArray())], Header = new GeometryHeader {Frames = 1, FCount = 0, ICount = Faces.Count, VCount = Vertices.Count, Version = 5}}; //(Vertices.ToArray(), Faces.ToArray(), GetEdgesArray());
+            return new Geometry { Frames = [new Frame(Vertices.ToArray(), Faces.ToArray())], Header = new GeometryHeader {Frames = 1, FCount = Faces.Count / 3, ICount = Faces.Count, VCount = Vertices.Count, Version = 1}}; //(Vertices.ToArray(), Faces.ToArray(), GetEdgesArray());
         }
 
         protected ushort AddMeshVertex(VertexInfo info)
@@ -237,9 +237,12 @@ public class ObjModel
             v.U = uv.X;
             v.V = uv.Y;
 
-            var i = (ushort)Vertices.Count;
+            var i = Vertices.IndexOf(v);
+            if (i != -1) return (ushort)i;
+            
+            i = Vertices.Count;
             Vertices.Add(v);
-            return i;
+            return (ushort)i;
         }
 
         protected void AddMeshTriangle(ushort i, ushort j, ushort k)
