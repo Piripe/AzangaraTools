@@ -1,6 +1,7 @@
 using AzangaraTools.Models;
 
 namespace AzangaraConverter.Helpers;
+using System.Globalization;
 
 public class ObjHelper
 {
@@ -14,7 +15,7 @@ public class ObjHelper
         // ---- Write vertices (v x y z) ----
         foreach (var v in frame.Vertices)
         {
-            writer.WriteLine($"v {v.Pos.X} {v.Pos.Y} {v.Pos.Z}");
+            writer.WriteLine($"v {v.Pos.X.ToString(CultureInfo.InvariantCulture)} {v.Pos.Y.ToString(CultureInfo.InvariantCulture)} {v.Pos.Z.ToString(CultureInfo.InvariantCulture)}");
         }
 
         writer.WriteLine();
@@ -22,7 +23,7 @@ public class ObjHelper
         // ---- Write UVs (vt u v) ----
         foreach (var v in frame.Vertices)
         {
-            writer.WriteLine($"vt {v.U} {1-v.V}");
+            writer.WriteLine($"vt {v.U.ToString(CultureInfo.InvariantCulture)} {(1-v.V).ToString(CultureInfo.InvariantCulture)}");
         }
 
         writer.WriteLine();
@@ -30,7 +31,7 @@ public class ObjHelper
         // ---- Write normals (vn x y z) ----
         foreach (var v in frame.Vertices)
         {
-            writer.WriteLine($"vn {v.Normal.X} {v.Normal.Y} {v.Normal.Z}");
+            writer.WriteLine($"vn {v.Normal.X.ToString(CultureInfo.InvariantCulture)} {v.Normal.Y.ToString(CultureInfo.InvariantCulture)} {v.Normal.Z.ToString(CultureInfo.InvariantCulture)}");
         }
 
         writer.WriteLine();
