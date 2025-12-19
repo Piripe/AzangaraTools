@@ -44,7 +44,7 @@ public class Glb
         
         if (args.Count < 2)
         {
-            Help.Run(["convert_room","glb"]);
+            Help.Run(["room","glb"]);
             return;
         }
         
@@ -54,13 +54,13 @@ public class Glb
         if (!inputPath.EndsWith(".room"))
         {
             Console.WriteLine("WARNING: Only .room files are supported as input");
-            Help.Run(["convert_room","glb"]);
+            Help.Run(["room","glb"]);
             return;
         }
         if (!outputPath.EndsWith(".glb"))
         {
             Console.WriteLine("WARNING: Only .glb files are supported as output");
-            Help.Run(["convert_room","glb"]);
+            Help.Run(["room","glb"]);
             return;
         }
         
