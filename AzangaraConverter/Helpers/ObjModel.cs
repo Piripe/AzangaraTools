@@ -235,7 +235,7 @@ public class ObjModel
             v.Normal = info.Vn <= 0 ? Vector3.Zero : ObjVn[info.Vn - 1];
             var uv = info.Vt <= 0 ? Vector2.Zero : ObjVt[info.Vt - 1];
             v.U = uv.X;
-            v.V = uv.Y;
+            v.V = 1-uv.Y;
 
             var i = Vertices.IndexOf(v);
             if (i != -1) return (ushort)i;
