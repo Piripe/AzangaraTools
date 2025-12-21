@@ -158,6 +158,8 @@ public class Room
             stream.WriteStruct(x);
         }
         
+        headers.FileSize = (uint)stream.Position;
+        
         stream.Seek(0, SeekOrigin.Begin);
         stream.WriteStruct(headers);
     }
