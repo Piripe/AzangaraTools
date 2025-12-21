@@ -117,8 +117,15 @@ public class Patch
             }
 
             var pngFile = storage.GetFile(lmPath);
-            room.BitmapLightMap = ImageResult.FromStream(pngFile.OpenRead());
+            room.BitmapLightMap = ImageResult.FromStream(pngFile.OpenRead(), ColorComponents.RedGreenBlueAlpha);
             pngFile.CloseRead();
+            if (room.BitmapLightMap.Width != 256 || room.BitmapLightMap.Height != 256)
+            {
+                
+                Console.WriteLine("WARNING: Bitmap light map must be 256x256");
+                Help.Run(["room","patch"]);
+                return;
+            }
         }
 
         if (outputPath != null && !outputPath.EndsWith(".room"))
