@@ -48,9 +48,9 @@ public class Help
                                           
                                           Arguments:
                                           
-                                          --geometry (-g) <obj_file>      - Export geometry to obj file
-                                          --geometry-back (-b) <obj_file> - Export geometry back to obj file
-                                          --geometry-lm (-m) <obj_file>   - Export geometry light map to obj file
+                                          --geometry (-g) <out_file>      - Export geometry to obj or mmd file
+                                          --geometry-back (-b) <out_file> - Export geometry back to obj or mmd file
+                                          --geometry-lm (-m) <out_file>   - Export geometry light map to obj or mmd file
                                           --lm (-l) <png_file>            - Export light map to png file
                                           """);
                         break;
