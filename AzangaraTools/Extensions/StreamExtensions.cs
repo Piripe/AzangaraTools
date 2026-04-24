@@ -61,7 +61,7 @@ internal static class StreamExtensions
         }
     
         var array = new T[rows][];
-        Span<T> flatSpan = MemoryMarshal.Cast<byte, T>(buffer);
+        ReadOnlySpan<T> flatSpan = MemoryMarshal.Cast<byte, T>(buffer);
     
         for (int i = 0; i < rows; i++)
         {
