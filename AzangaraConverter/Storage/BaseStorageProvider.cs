@@ -11,6 +11,11 @@ public class BaseStorageProvider : IStorageProvider
         Console.WriteLine("Reading file {0}", path);
         return new NormalFile(Path.GetDirectoryName(path) ?? ".", Path.GetFileName(path));
     }
+    public virtual IFile GetFile(string root, string path)
+    {
+        Console.WriteLine("Reading file {0}", path);
+        return new NormalFile(root, path);
+    }
 
     public virtual ImageResult GetImage(string path)
     {

@@ -45,7 +45,7 @@ public class CreatePak
         
         using var s = new MemoryStream();
         
-        PakHelper.Write(s, files.Select(x=>storage.GetFile(x)).ToArray());
+        PakHelper.Write(s, files.Select(x=>storage.GetFile(inputPath,  Path.GetRelativePath(inputPath,x))).ToArray());
                     
         storage.WriteFile(outputPath, s.ToArray());
     }
