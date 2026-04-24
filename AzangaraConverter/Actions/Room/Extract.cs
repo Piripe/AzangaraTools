@@ -69,17 +69,19 @@ public class Extract
                     
                 storage.WriteFile(geometryPath, s.ToArray());
             }
-            else if (geometryPath.EndsWith(".obj"))
+            else if (geometryPath.EndsWith(".mmd"))
             {
                 using var s = new MemoryStream();
                 room.Geometry.Export(s);
                     
                 storage.WriteFile(geometryPath, s.ToArray());
             }
-
-            Console.WriteLine("WARNING: Only .obj and .mmd files are supported as geometry output");
-            Help.Run(["room","extract"]);
-            return;
+            else
+            {
+                Console.WriteLine("WARNING: Only .obj and .mmd files are supported as geometry output");
+                Help.Run(["room","extract"]);
+                return;
+            }
         }
         
         if (geometryBackPath != null)
@@ -91,17 +93,19 @@ public class Extract
                     
                 storage.WriteFile(geometryBackPath, s.ToArray());
             }
-            else if (geometryBackPath.EndsWith(".obj"))
+            else if (geometryBackPath.EndsWith(".mmd"))
             {
                 using var s = new MemoryStream();
                 room.GeometryBack.Export(s);
                     
                 storage.WriteFile(geometryBackPath, s.ToArray());
             }
-
-            Console.WriteLine("WARNING: Only .obj and .mmd files are supported as geometry back output");
-            Help.Run(["room","extract"]);
-            return;
+            else
+            {
+                Console.WriteLine("WARNING: Only .obj and .mmd files are supported as geometry back output");
+                Help.Run(["room","extract"]);
+                return;
+            }
         }
         
         if (geometryLmPath != null)
@@ -113,17 +117,19 @@ public class Extract
                     
                 storage.WriteFile(geometryLmPath, s.ToArray());
             }
-            else if (geometryLmPath.EndsWith(".obj"))
+            else if (geometryLmPath.EndsWith(".mmd"))
             {
                 using var s = new MemoryStream();
                 room.GeometryLightMap.Export(s);
                     
                 storage.WriteFile(geometryLmPath, s.ToArray());
             }
-
-            Console.WriteLine("WARNING: Only .obj and .mmd files are supported as geometry light map output");
-            Help.Run(["room","extract"]);
-            return;
+            else
+            {
+                Console.WriteLine("WARNING: Only .obj and .mmd files are supported as geometry light map output");
+                Help.Run(["room", "extract"]);
+                return;
+            }
         }
         
         if (lmPath != null)
