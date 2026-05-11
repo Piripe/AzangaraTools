@@ -2,7 +2,7 @@
 
 namespace AzangaraTools.Tests.Scripts;
 
-public class Tests
+public class LexerTests
 {
     [SetUp]
     public void Setup()
