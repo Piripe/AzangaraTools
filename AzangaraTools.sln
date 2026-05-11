@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzangaraConverter", "Azanga
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzangaraTools", "AzangaraTools\AzangaraTools.csproj", "{C5E07B16-43AF-4B8B-BA2D-F6316B33619D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzangaraTools.Tests", "AzangaraTools.Tests\AzangaraTools.Tests.csproj", "{0103E9A8-0860-42AA-B81A-33E0516A2CC4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{C5E07B16-43AF-4B8B-BA2D-F6316B33619D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C5E07B16-43AF-4B8B-BA2D-F6316B33619D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C5E07B16-43AF-4B8B-BA2D-F6316B33619D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0103E9A8-0860-42AA-B81A-33E0516A2CC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0103E9A8-0860-42AA-B81A-33E0516A2CC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0103E9A8-0860-42AA-B81A-33E0516A2CC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0103E9A8-0860-42AA-B81A-33E0516A2CC4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
