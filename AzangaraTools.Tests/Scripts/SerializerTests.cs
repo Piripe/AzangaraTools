@@ -28,6 +28,25 @@ public class SerializerTests
         [ScriptPropertyName("int_dict")]
         public Dictionary<string, int> IntDict { get; set; }
     }
+
+    [ScriptPolymorphic]
+    [ScriptDerivedType(typeof(TestDerivedType1), "test_one")]
+    [ScriptDerivedType(typeof(TestDerivedType2), "test_two")]
+    interface ITestInterface
+    {
+	    public string Test { get; set; }
+    }
+    class TestDerivedType1 : ITestInterface
+    {
+	    public string Test { get; set; }
+	    public string DerivedTest { get; set; }
+    }
+    class TestDerivedType2 : ITestInterface
+    {
+	    public string Test { get; set; }
+	    public int DerivedTest { get; set; }
+    }
+    
     
     TestObject testObject = new()
     {
@@ -439,7 +458,34 @@ public class SerializerTests
                                      }
                                      
                                      """;
-    
+
+    private ITestInterface[] testPolymorphicArray =
+    [
+		new TestDerivedType1()
+		{
+			Test = "Test 1",
+			DerivedTest = "Derived Test 1",
+		},
+		new TestDerivedType2()
+		{
+			Test = "Test 2",
+			DerivedTest = 2
+		}
+    ];
+
+    private string testPolymorphicString = """
+                                           $test_one 
+                                           {
+                                           	$Test "Test 1" 
+                                           	$DerivedTest "Derived Test 1" 
+                                           }
+                                           $test_two 
+                                           {
+                                           	$Test "Test 2" 
+                                           	$DerivedTest 2 
+                                           }
+
+                                           """;
     
     [SetUp]
     public void Setup()
@@ -676,5 +722,21 @@ public class SerializerTests
 	                                                       Pos: {Vector2}
 	                                                   
 	                                                   """));
+    }
+    [Test]
+    public void SerializePolymorphicArray()
+    {
+	    Console.WriteLine(ObjectDumper.Dump(testPolymorphicArray));
+	    var res = ScriptSerializer.Serialize(testPolymorphicArray);
+	    Console.WriteLine(res);
+	    Assert.That(res, Is.EqualTo(testPolymorphicString));
+    }
+    [Test]
+    public void DeserializePolymorphicArray()
+    {
+	    Console.WriteLine(testPolymorphicString);
+	    var res = ScriptSerializer.Deserialize<ITestInterface[]>(testPolymorphicString);
+	    Console.WriteLine(ObjectDumper.Dump(res));
+	    Assert.That(ObjectDumper.Dump(res), Is.EqualTo(ObjectDumper.Dump(testPolymorphicArray)));
     }
 }

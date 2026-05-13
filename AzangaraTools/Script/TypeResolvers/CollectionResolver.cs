@@ -14,16 +14,32 @@ public class CollectionResolver : ITypeResolver
     public void Write(object value, ScriptWriter writer, int depth)
     {
         var elementType = GetElementType(value.GetType())!;
-        var resolver = TypeResolverRegistry.Find(elementType);
-        if (resolver == null) return;
+        var usePolymorphicElementName = (elementType.GetCustomAttributes(typeof(ScriptPolymorphicAttribute), false).FirstOrDefault() as ScriptPolymorphicAttribute)?.ElementNameInArray ?? false;
+        var derivedTypes = (usePolymorphicElementName ? (elementType.GetCustomAttributes(typeof(ScriptDerivedTypeAttribute), false) as ScriptDerivedTypeAttribute[])?.ToDictionary(x=>x.Type) : null) ?? [];
+        ITypeResolver? resolver = null;
+        if (derivedTypes.Count == 0)
+        {
+            resolver = TypeResolverRegistry.Find(elementType);
+            if (resolver == null) return;
+        }
 
         var items = (IEnumerable)value;
         
         if (depth > 0) writer.WriteBlockStart();
         foreach (var item in items)
         {
-            writer.WriteIdentifier(_itemAttribute.ElementName);
-            resolver.Write(item, writer, depth + 1);
+            var type = item.GetType();
+            writer.WriteIdentifier((usePolymorphicElementName ? derivedTypes.TryGetValue(type, out var derivedType) ? derivedType.Descriptor : null : null) ?? _itemAttribute.ElementName);
+            if (derivedTypes.Count > 0)
+            {
+                resolver = TypeResolverRegistry.Find(type);
+                if (resolver == null) continue;
+                resolver.Write(item, writer, depth + 1);
+            }
+            else
+            {
+                resolver!.Write(item, writer, depth + 1);
+            }
             writer.WriteNewLine();
         }
         if (depth > 0) writer.WriteBlockEnd();
@@ -32,8 +48,16 @@ public class CollectionResolver : ITypeResolver
     public object? Read(Type type, ScriptReader reader, int depth)
     {
         var elementType = GetElementType(type)!;
-        var resolver = TypeResolverRegistry.Find(elementType)
+
+        var usePolymorphicElementName = (elementType.GetCustomAttributes(typeof(ScriptPolymorphicAttribute), false).FirstOrDefault() as ScriptPolymorphicAttribute)?.ElementNameInArray ?? false;
+        var derivedTypes = (usePolymorphicElementName ? (elementType.GetCustomAttributes(typeof(ScriptDerivedTypeAttribute), false) as ScriptDerivedTypeAttribute[])?.ToDictionary(x=>x.Descriptor) : null) ?? [];
+
+        ITypeResolver? resolver = null;
+        
+        if (derivedTypes.Count == 0) {
+            resolver = TypeResolverRegistry.Find(elementType)
                        ?? throw new Exception($"No resolver for type {elementType}");
+        }
 
         var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(elementType))!;
         
@@ -47,8 +71,16 @@ public class CollectionResolver : ITypeResolver
         
         while (reader.Current.Type != ScriptTokenType.RBrace && reader.Current.Type != ScriptTokenType.EOF)
         {
-            if (reader.Consume(ScriptTokenType.Identifier).Value != _itemAttribute.ElementName) continue;
-            list.Add(resolver.Read(elementType, reader, depth + 1));
+            var elementName = reader.Consume(ScriptTokenType.Identifier).Value;
+            ScriptDerivedTypeAttribute? derivedType = null;
+            if ((usePolymorphicElementName && !derivedTypes.TryGetValue(elementName, out derivedType)) || (!usePolymorphicElementName && elementName != _itemAttribute.ElementName)) continue;
+            if (derivedTypes.Count > 0)
+            {
+                if (derivedType == null) continue;
+                resolver = TypeResolverRegistry.Find(derivedType.Type)
+                           ?? throw new Exception($"No resolver for type {elementType}");
+            }
+            list.Add(resolver!.Read(derivedTypes.Count > 0 ? derivedType!.Type : elementType, reader, depth + 1));
             reader.SkipNewLines();
         }
         
