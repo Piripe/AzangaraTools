@@ -23,7 +23,7 @@ public class LexerTests
                          $item "one"
                          $item "two"
                       }
-                  }
+                  } // another comment
                   """;
         var tokens = new ScriptLexer(src).Tokenize();
         Assert.That(tokens.Count, Is.EqualTo(30));

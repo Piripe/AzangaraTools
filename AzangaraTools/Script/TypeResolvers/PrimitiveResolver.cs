@@ -38,8 +38,24 @@ public class PrimitiveResolver : ITypeResolver
         }
     }
 
-    public object? Read(Type type, ScriptReader reader)
+    public object? Read(Type type, ScriptReader reader, int depth)
     {
-        throw new NotImplementedException();
+        var tok = reader.Consume();
+        return type switch
+        {
+            _ when type == typeof(string) => tok.Value,
+            _ when type == typeof(int) => int.Parse(tok.Value),
+            _ when type == typeof(uint) => uint.Parse(tok.Value),
+            _ when type == typeof(long) => long.Parse(tok.Value),
+            _ when type == typeof(ulong) => ulong.Parse(tok.Value),
+            _ when type == typeof(short) => short.Parse(tok.Value),
+            _ when type == typeof(ushort) => ushort.Parse(tok.Value),
+            _ when type == typeof(byte) || type == typeof(char) => byte.Parse(tok.Value),
+            _ when type == typeof(bool) => bool.Parse(tok.Value),
+            _ when type == typeof(float) => float.Parse(tok.Value, CultureInfo.InvariantCulture),
+            _ when type == typeof(double) => double.Parse(tok.Value, CultureInfo.InvariantCulture),
+            _ when type == typeof(decimal) => decimal.Parse(tok.Value, CultureInfo.InvariantCulture),
+            _ => throw new Exception("Unsupported primitive type: {type}")
+        };
     }
 }

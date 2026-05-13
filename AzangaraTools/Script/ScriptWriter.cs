@@ -3,9 +3,9 @@ using System.Text;
 
 namespace AzangaraTools.Script;
 
-public class ScriptWriter
+public class ScriptWriter(Stream stream)
 {
-    private readonly StringBuilder _sb = new();
+    private readonly StreamWriter _sw = new(stream);
     private int _indent = 0;
     private const string IndentUnit = "\t";
     
@@ -13,26 +13,25 @@ public class ScriptWriter
     
     public void WriteIdentifier(string name)
     {
-        _sb.Append($"{Pad}${name} ");
+        _sw.Write($"{Pad}${name} ");
     }
 
     public void WriteNewLine()
     {
-        _sb.AppendLine();
+        _sw.WriteLine();
     }
 
     public void WriteLBrace()
     {
-        _sb.Append($"{Pad}{{");
+        _sw.Write($"{Pad}{{");
     }
     public void WriteRBrace()
     {
-        _sb.Append($"{Pad}}}");
+        _sw.Write($"{Pad}}}");
     }
 
-    public void WriteBlockStart(string name)
+    public void WriteBlockStart()
     {
-        WriteIdentifier(name);
         WriteNewLine();
         WriteLBrace();
         WriteNewLine();
@@ -42,20 +41,24 @@ public class ScriptWriter
     {
         _indent--;
         WriteRBrace();
-        WriteNewLine();
     }
     public void WriteString(string text)
     {
-        _sb.Append($"\"{text}\" ");
+        _sw.Write($"\"{text}\" ");
     }
     public void WriteInt(int value)
     {
-        _sb.Append($"{value} ");
+        _sw.Write($"{value} ");
     }
     public void WriteFloat(float value)
     {
-        _sb.Append($"{value.ToString(CultureInfo.InvariantCulture)} ");
+        _sw.Write($"{value.ToString(CultureInfo.InvariantCulture)} ");
     }
 
-    public override string ToString() => _sb.ToString();
+    public override string ToString()
+    {
+        _sw.Flush();
+        stream.Seek(0, SeekOrigin.Begin);
+        return new StreamReader(stream).ReadToEnd();
+    }
 }
