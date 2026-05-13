@@ -7,6 +7,7 @@ public static class TypeResolverRegistry
     private static readonly List<ITypeResolver> _resolvers =
     [
         new PrimitiveResolver(),
+        new VectorResolver(),
         new CollectionResolver(),
         new DictionaryResolver(),
         new NullableResolver(),

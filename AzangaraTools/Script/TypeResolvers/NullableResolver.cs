@@ -13,6 +13,6 @@ public class NullableResolver : ITypeResolver
     public object? Read(Type type, ScriptReader reader, int depth)
     {
         var inner = Nullable.GetUnderlyingType(type)!;
-        return TypeResolverRegistry.Find(inner)?.Read(type, reader, depth);
+        return TypeResolverRegistry.Find(inner)?.Read(inner, reader, depth);
     }
 }

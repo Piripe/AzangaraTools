@@ -51,11 +51,11 @@ public class PrimitiveResolver : ITypeResolver
             _ when type == typeof(short) => short.Parse(tok.Value),
             _ when type == typeof(ushort) => ushort.Parse(tok.Value),
             _ when type == typeof(byte) || type == typeof(char) => byte.Parse(tok.Value),
-            _ when type == typeof(bool) => bool.Parse(tok.Value),
+            _ when type == typeof(bool) => bool.TryParse(tok.Value, out var b) ? b : int.TryParse(tok.Value, out var i) ? i == 1 : null,
             _ when type == typeof(float) => float.Parse(tok.Value, CultureInfo.InvariantCulture),
             _ when type == typeof(double) => double.Parse(tok.Value, CultureInfo.InvariantCulture),
             _ when type == typeof(decimal) => decimal.Parse(tok.Value, CultureInfo.InvariantCulture),
-            _ => throw new Exception("Unsupported primitive type: {type}")
+            _ => throw new Exception($"Unsupported primitive type: {type}")
         };
     }
 }
